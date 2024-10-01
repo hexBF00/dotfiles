@@ -1,0 +1,9 @@
+dotfiles
+========
+My personal dotfiles manage using Scoop.
+
+Installation
+------------
+Enter the following command to setup environment:
+
+	.\setup.ps1 [workstation/vm]
