@@ -16,6 +16,75 @@ function Test-CommandAvaliable {
     return [Boolean](Get-Command $Command -ErrorAction SilentlyContinue)
 }
 
+function Test-IsFileLocked {
+    param(
+        [String] $path
+    )
+
+    $file = New-Object System.IO.FileInfo $path
+
+    if (!(Test-Path $path)) {
+        return $false
+    }
+
+    try {
+        $stream = $file.Open(
+            [System.IO.FileMode]::Open,
+            [System.IO.FileAccess]::ReadWrite,
+            [System.IO.FileShare]::None
+        )
+        if ($stream) {
+            $stream.Close()
+        }
+        return $false
+    } catch {
+        # The file is locked by a process.
+        return $true
+    }
+}
+
+function Expand-ZipArchive {
+    param(
+        [String] $path,
+        [String] $to
+    )
+
+    if (!(Test-Path $path)) {
+	Write-Host "[!] Unzip failed: can't find $path to unzip" -ForegroundColor Red
+	exit 1
+    }
+
+    $retries = 0
+    while ($retries -le 10) {
+        if ($retries -eq 10) {
+	    Write-Host "[!] Unzip failed: can't unzip because a process is locknig the file" -ForegroundColor Red
+	    exit 1
+        }
+        if (Test-IsFileLocked $path) {
+	    Write-Host "[*] Unzip: waiting for $path to be unlocked by another process... ($retries/10)"
+            $retries++
+            Start-Sleep -Seconds 2
+        } else {
+            break
+        }
+    }
+
+    $oldVerbosePreference = $VerbosePreference
+    $global:VerbosePreference = 'SilentlyContinue'
+
+    $oldProgressPreference = $ProgressPreference
+    $global:ProgressPreference = 'SilentlyContinue'
+
+    Microsoft.PowerShell.Archive\Expand-Archive -Path $path -DestinationPath $to -Force
+    $global:VerbosePreference = $oldVerbosePreference
+    $global:ProgressPreference = $oldProgressPreference
+}
+
+# Variables
+$SCOOP_DIR = "$env:USERPROFILE\scoop"
+$SCOOP_MAIN_BUCKET_DIR = "$SCOOP_DIR\buckets\main"
+$SCOOP_MAIN_BUCKET_URL = "https://github.com/shlwapidll/main/archive/main.zip"
+
 # Main
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -115,6 +184,8 @@ if ($response -notin @("y", "Y")) {
 
 Write-Host ""
 
+$downloadSession = New-Object System.Net.WebClient
+
 Write-Host "[+] Set password to never expire..." -ForegroundColor Cyan
 Set-LocalUser -Name "${Env:UserName}" -PasswordNeverExpires $true
 
@@ -130,10 +201,32 @@ powercfg -change -hibernate-timeout-dc 0 | Out-Null
 
 if (!(Test-CommandAvaliable("scoop"))) {
     Write-Host "[+] Installing scoop..." -ForegroundColor Cyan
-    & ([scriptblock]::Create((irm "https://get.scoop.sh"))) -RunAsAdmin | Out-Null
+    & ([scriptblock]::Create((irm "https://get.scoop.sh"))) -RunAsAdmin
 }
 
+Write-Host "[+] Configuration scoop..." -ForegroundColor Cyan
 scoop bucket rm main
 
+$scoopMainZipfile = "$SCOOP_MAIN_BUCKET_DIR\scoop-main.zip"
+$scoopMainUnzipTempDir = "$SCOOP_MAIN_BUCKET_DIR\_tmp"
+
+if (!(Test-Path $SCOOP_MAIN_BUCKET_DIR)) {
+    New-Item -Type Directory $SCOOP_MAIN_BUCKET_DIR | Out-Null
+}
+
+$downloadSession.downloadFile($SCOOP_MAIN_BUCKET_URL, $scoopMainZipfile)
+
+Expand-ZipArchive $scoopMainZipfile $scoopMainUnzipTempDir
+Copy-Item "$scoopMainUnzipTempDir\Main-*\*" $SCOOP_MAIN_BUCKET_DIR -Recurse -Force
+
+Remove-Item $scoopMainZipfile
+Remove-Item $scoopMainUnzipTempDir -Recurse -Force
+
 Write-Host "[+] Debloating windows..." -ForegroundColor Cyan
-& ([scriptblock]::Create((irm "https://win11debloat.raphi.re/"))) -RunDefaults -Silent
+$debloatScript = {& ([scriptblock]::Create((irm "https://win11debloat.raphi.re/"))) -RunDefaults -Silent}
+$debloatScriptEncoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($debloatScript))
+$debloatProcess = Start-Process powershell.exe -PassThru -Verb RunAs -ArgumentList "-encodedCommand", $debloatScriptEncoded
+
+if ($null -ne $debloatProcess) {
+    $debloatProcess.WaitForExit()
+}
