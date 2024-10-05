@@ -1,0 +1,16 @@
+[user]
+	name = shell32
+	email = hi@shell32.net
+
+[init]
+	defaultBranch = main
+
+[commit]
+	verbose = true
+	gpgSign = true
+
+[user]
+	signingkey = 0x7459EA43D553C502
+
+[gpg]
+	program = C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe
