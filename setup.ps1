@@ -262,6 +262,44 @@ function Task-ConfigScoop {
     Remove-Item $scoopBucketExtract -Recurse -Force
 }
 
+function Task-InstallPackage {
+    Log-Task "Installing pacakge..."
+    $commonPackages = @("7zip", "vcredist", "debloat")
+    $profilePackages =  @()
+
+    if ($profile -eq "workstation") {
+        $profilePackages = @(
+            "git",
+            "gpg",
+            "mullvad-vpn",
+            "mullvad-browser",
+            "vesktop",
+            "keepassxc",
+            "vmware-workstation",
+            "wsl-ssh-pageant"
+        )   
+    } elseif ($profile -eq "vm") {
+        $profilePackages = @(
+            "capa",
+            "cheatengine",
+            "detect-it-easy",
+            "dnspy",
+            "ghidra",
+            "hxd",
+            "ida.free",
+            "reclass-net",
+            "x64dbg",
+            "x64dbg.plugin.scyllahide",
+            "yara"
+        )
+    }
+
+    $packages = $commonPackages + $profilePacakges
+    foreach ($package in $pacakges) {
+            scoop install $package -u
+    }
+}
+
 # Main
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -301,3 +339,4 @@ Write-Host
 Task-PassNeverExpire
 Task-SetPowerOpts
 Task-ConfigScoop
+Task-InstallPackage
