@@ -1,7 +1,6 @@
+# vim: tabstop=4 shiftwidth=4 expandtab
 # Copyright (C) 2024 shell32 <hi@shell32.net>. All Rights Reserved.
 # See LICENSE file for more information on copyright and license.
-
-# vim: tabstop=4 shiftwidth=4 expandtab
 
 # Param
 param (
@@ -130,6 +129,13 @@ function Expand-ZipArchive {
     Microsoft.PowerShell.Archive\Expand-Archive -Path $path -DestinationPath $to -Force
     $global:VerbosePreference = $oldVerbosePreference
     $global:ProgressPreference = $oldProgressPreference
+}
+
+function Check-64Bit {
+    Log-Task "Checking if you are using 64 bit powershell..."
+    if (!([Environment]::Is64BitProcess)) {
+        Log-Error "It seems like you are using 32 bit powershell. Please use 64 bit instead"
+    }
 }
 
 function Check-PwshVersion {
@@ -266,10 +272,7 @@ if ($profile -notin @("workstation", "vm")) {
 }
 
 ## Checking requirement
-if (!([Environment]::Is64BitProcess)) {
-    Log-Error "It seems like you are using 32 bit powershell. Please use 64 bit instead"
-}
-
+Check-64Bit
 Check-PwshVersion
 Check-RunAsAdmin
 Check-ExecPolicy
