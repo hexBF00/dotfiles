@@ -271,10 +271,11 @@ function Task-InstallPackage {
         $profilePackages = @(
             "git",
             "gpg",
-            "mullvad-vpn",
-            "mullvad-browser",
-            "vesktop",
             "keepassxc",
+            "mullvad.vpn",
+            "mullvad.browser",
+            "neovim",
+            "vesktop",
             "vmware-workstation",
             "wsl-ssh-pageant"
         )   
