@@ -79,3 +79,6 @@ if (!(Test-CommandAvaliable("Robocopy"))) {
 
 Task-CopyConfigFile
 Task-CmdAutoRunInit
+
+## Finishing Up
+Log-Task "Finished!"

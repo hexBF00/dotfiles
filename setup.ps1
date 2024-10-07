@@ -319,6 +319,18 @@ function Task-InstallPackage {
     }
 }
 
+function Task-FinishingUp {
+    Log-Task "Finishing up..."
+    
+    ## Unpin taskbar icons
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "Favorites" -Type Binary -Value ([byte[]](255))
+    Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "FavoritesResolve" -ErrorAction SilentlyContinue
+ 
+    ## Remove desktop links
+    Remove-Item (Join-Path $env:USERPROFILE "Desktop\*.lnk")
+    Remove-Item (Join-Path $env:PUBLIC "Desktop\*.lnk")
+}
+
 # Main
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -359,3 +371,7 @@ Task-PassNeverExpire
 Task-SetPowerOpts
 Task-ConfigScoop
 Task-InstallPackage
+Task-FinishingUp
+
+## Finished
+Log-Task "Finished!"
