@@ -9,8 +9,11 @@ param (
 
 # Variables
 $SCOOP_DIR = "$env:USERPROFILE\scoop"
-$SCOOP_BUCKET_DIR = "$SCOOP_DIR\buckets\main"
-$SCOOP_BUCKET_URL = "https://github.com/scoopinstaller/main/archive/master.zip"
+$SCOOP_MAIN_BUCKET_DIR = "$SCOOP_DIR\buckets\main"
+$SCOOP_COMMONS_BUCKET_DIR = "$SCOOP_DIR\buckets\commons"
+$SCOOP_COMMONS_BUCKET_URL = "https://github.com/hexBF00/bucket-commons/archive/main.zip"
+$SCOOP_VM_BUCKET_URL = "https://gtihub.com/hexBF00/bucket-vm/archive/main.zip"
+$SCOOP_WORKSTATION_BUCKET_URL = "https://github.com/hexBF00/bucket-workstation/archive/main.zip"
 
 # Functions
 function Log-Log {
@@ -248,18 +251,30 @@ function Task-ConfigScoop {
         New-Item -Type Directory $SCOOP_BUCKET_DIR | Out-Null
     }
 
-    $scoopBucketArchive = "$SCOOP_BUCKET_DIR\_bucket.zip"
-    $scoopBucketExtract = "$SCOOP_BUCKET_DIR\_tmp"
+    $scoopMainBucketArchive = "$SCOOP_MAIN_BUCKET_DIR\_bucket.zip"
+    $scoopMainBucketExtract = "$SCOOP_MAIN_BUCKET_DIR\_tmp"
+    $scoopCommonsBucketArchive = "$SCOOP_COMMONS_BUCKET_DIR\_bucket.zip"
+    $scoopCommonsBucketExtract = "$SCOOP_COMMONS_BUCKET_DIR\_tmp"
+
+    $profileBucketUrl = $SCOOP_WORKSTATION_BUCKET_URL
+    if ($profile -eq "vm") {
+        $profileBucketUrl = $SCOOP_VM_BUCKET_URL
+    }
 
     $downloadSession = New-Object System.Net.WebClient
-    $downloadSession.downloadFile($SCOOP_BUCKET_URL, $scoopBucketArchive)
+    $downloadSession.downloadFile($profileBucketUrl, $scoopMainBucketArchive)
+    $downloadSession.downloadFile($SCOOP_COMMONS_BUCKET_URL, $scoopCommonsBucketArchive)
 
-    Expand-ZipArchive $scoopBucketArchive $scoopBucketExtract
+    Expand-ZipArchive $scoopMainBucketArchive $scoopMainBucketExtract
+    Expand-ZipArchive $scoopCommonsBucketArchive $scoopCommonsBucketExtract
 
-    Copy-Item "$scoopBucketExtract\Main-*\*" $SCOOP_BUCKET_DIR -Recurse -Force
+    Copy-Item "$scoopMainBucketExtract\**main-*\*" $SCOOP_MAIN_BUCKET_DIR -Recurse -Force
+    Copy-Item "$scoopCommonsBucketExtract\**main-*\*" $SCOOP_COMMONS_BUCKET_DIR -Recurse -Force
 
-    Remove-Item $scoopBucketArchive
-    Remove-Item $scoopBucketExtract -Recurse -Force
+    Remove-Item $scoopMainBucketArchive
+    Remove-Item $scoopCommonsBucketArchive
+    Remove-Item $scoopMainBucketExtract -Recurse -Force
+    Remove-Item $scoopCommonsBucketExtract -Recurse -Force
 }
 
 function Task-InstallPackage {
@@ -295,9 +310,12 @@ function Task-InstallPackage {
         )
     }
 
-    $packages = $commonPackages + $profilePacakges
-    foreach ($package in $pacakges) {
-            scoop install $package -u
+    foreach ($package in $commonPackages) {
+        scoop install "commons/$package" -u
+    }
+
+    foreach ($package in $profilePackages) {
+        scoop install "main/$package" -u
     }
 }
 
