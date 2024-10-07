@@ -399,3 +399,5 @@ Task-FinishingUp
 
 ## Finished
 Log-Task "Finished!"
+Log-Info "System will automatic restart in 5 seconds..."
+shutdown.exe /r /t 5
