@@ -341,7 +341,10 @@ function Task-FinishingUp {
     $ErrorActionPreference = "Stop"
 
     Log-Info "Running debloating script..."
-    . "$SCOOP_DIR\apps\debloat\current\debloat.ps1"
+    $debloatProcess = Start-Process powershell.exe -PassThru -ArgumentList "-executionpolicy bypass -File $SCOOP_DIR\apps\debloat\current\debloat.ps1" -Verb RunAs
+    if ($null -ne $debloatProcess) {
+        $debloatProcess.WaitForExit()
+    }
     
     Log-Info "Unpining taskbar icons..."
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "Favorites" -Type Binary -Value ([byte[]](255))
