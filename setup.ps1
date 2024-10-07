@@ -247,8 +247,12 @@ function Task-ConfigScoop {
     Log-Task "Configurating scoop..."
     scoop bucket rm main | Out-Null
 
-    if (!(Test-Path $SCOOP_BUCKET_DIR)) {
-        New-Item -Type Directory $SCOOP_BUCKET_DIR | Out-Null
+    if (!(Test-Path $SCOOP_MAIN_BUCKET_DIR)) {
+        New-Item -Type Directory $SCOOP_MAIN_BUCKET_DIR | Out-Null
+    }
+
+    if (!(Test-Path $SCOOP_COMMONS_BUCKET_DIR)) {
+        New-Item -Type Directory $SCOOP_COMMONS_BUCKET_DIR | Out-Null
     }
 
     $scoopMainBucketArchive = "$SCOOP_MAIN_BUCKET_DIR\_bucket.zip"
@@ -268,8 +272,8 @@ function Task-ConfigScoop {
     Expand-ZipArchive $scoopMainBucketArchive $scoopMainBucketExtract
     Expand-ZipArchive $scoopCommonsBucketArchive $scoopCommonsBucketExtract
 
-    Copy-Item "$scoopMainBucketExtract\**main-*\*" $SCOOP_MAIN_BUCKET_DIR -Recurse -Force
-    Copy-Item "$scoopCommonsBucketExtract\**main-*\*" $SCOOP_COMMONS_BUCKET_DIR -Recurse -Force
+    Copy-Item "$scoopMainBucketExtract\**\*" $SCOOP_MAIN_BUCKET_DIR -Recurse -Force
+    Copy-Item "$scoopCommonsBucketExtract\**\*" $SCOOP_COMMONS_BUCKET_DIR -Recurse -Force
 
     Remove-Item $scoopMainBucketArchive
     Remove-Item $scoopCommonsBucketArchive
@@ -321,12 +325,29 @@ function Task-InstallPackage {
 
 function Task-FinishingUp {
     Log-Task "Finishing up..."
+
+    Log-Info "Installing winget..."
+    # https://learn.microsoft.com/en-us/windows/package-manager/winget/#install-winget-on-windows-sandbox
+    $ErrorActionPreference = "Continue"
+    Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+    Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile Microsoft.VCLibs.x64.14.00.Desktop.appx
+    Invoke-WebRequest -Uri https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.8.6/Microsoft.UI.Xaml.2.8.x64.appx -OutFile Microsoft.UI.Xaml.2.8.x64.appx
+    Add-AppxPackage Microsoft.VCLibs.x64.14.00.Desktop.appx
+    Add-AppxPackage Microsoft.UI.Xaml.2.8.x64.appx
+    Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+    Remove-Item Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle 
+    Remove-Item Microsoft.VCLibs.x64.14.00.Desktop.appx
+    Remove-Item Microsoft.UI.Xaml.2.8.x64.appx
+    $ErrorActionPreference = "Stop"
+
+    Log-Info "Running debloating script..."
+    . "$SCOOP_DIR\apps\debloat\current\debloat.ps1"
     
-    ## Unpin taskbar icons
+    Log-Info "Unpining taskbar icons..."
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "Favorites" -Type Binary -Value ([byte[]](255))
     Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name "FavoritesResolve" -ErrorAction SilentlyContinue
  
-    ## Remove desktop links
+    Log-Info "Removing desktop links..."
     Remove-Item (Join-Path $env:USERPROFILE "Desktop\*.lnk")
     Remove-Item (Join-Path $env:PUBLIC "Desktop\*.lnk")
 }
