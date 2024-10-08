@@ -295,7 +295,7 @@ function Task-InstallPackage {
             "mullvad.browser",
             "neovim",
             "vesktop",
-            "vmware-workstation",
+            "vmware.workstation",
             "wsl-ssh-pageant"
         )   
     } elseif ($profile -eq "vm") {
