@@ -13,4 +13,4 @@
 	signingkey = 0xACEF020378E01314
 
 [gpg]
-	program = C:\\Users\\shell32\\scoop\\apps\\gpg\\current\bin\\gpg.exe 
+	program = C:\\Users\\shell32\\scoop\\apps\\gpg\\current\\bin\\gpg.exe 
