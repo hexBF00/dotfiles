@@ -1,1 +1,1 @@
-config/**/gpg/home/* text=auto eol=lf
+config/**/gnupg/* text=auto eol=lf
